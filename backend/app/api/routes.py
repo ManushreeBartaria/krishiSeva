@@ -1,3 +1,5 @@
+from itertools import product
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connections import get_db
@@ -221,22 +223,28 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
-    
-        # Get farmer details
+
+    # ✅ Get farmer details
     farmer = db.query(Farmer).filter(Farmer.id == farmer_id).first()
 
-    # Create message
+    # ✅ FIX: use already fetched product
+    product_name = product.name
+
+    # ✅ Create message
     message = f"""
-    New Order Received!
-    Product ID: {order.product_id}
-    Quantity: {order.quantity}
-    Total: ₹{total_price}
-    """
+New Order Received!
+Product: {product_name}
+Quantity: {order.quantity}
+Total: ₹{total_price}
+"""
 
-    # Send SMS
-    send_sms(farmer.phone, message)
+    # ✅ OPTIONAL: language (fallback to English)
+    language = getattr(farmer, "language", "en")
 
-    return new_order    
+    # ✅ Send SMS (with translation support)
+    send_sms(farmer.phone, message, language)
+
+    return new_order
 
 @router.get("/buyer/{buyer_id}", response_model=list[OrderResponse])
 def get_buyer_orders(buyer_id: int, db: Session = Depends(get_db)):
