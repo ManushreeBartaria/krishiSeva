@@ -3,7 +3,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connections import get_db
-from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest, Admin, PriceSuggestion
+from app.model.model import (
+    Farmer, Buyer, Organizer, FoodProduct, CraftProduct,
+    Order, OrganizerRequest, Admin, PriceSuggestion,
+    RiskEvent, RiskAlertLog,
+)
 from app.schemas.schemas import (
     FarmerRegister, FarmerResponse,
     BuyerRegister, BuyerResponse,
@@ -16,18 +20,19 @@ from app.schemas.schemas import (
     FoodProductListResponse, CraftProductListResponse,
     PriceSuggestionResponse, FoodPriceUpdate,
     FarmerFoodItem, FarmerCraftItem,
+    RiskAlertRequest,
 )
 from app.utils.price_predictor import get_predicted_price
 from app.utils.security import hash_password
+from app.utils.risk_engine import run_risk_analysis
 from fastapi import File, UploadFile, Form
 import shutil
 import os
 import uuid
+import json
 from app.utils.geocode import get_lat_lng
 from app.utils.locations import calculate_distance
-from app.model.model import Farmer
 from app.utils.sms import send_sms
-from app.model.model import Farmer
 
 
 # Ensure the uploads directory exists
@@ -536,4 +541,202 @@ def admin_get_price_suggestions(db: Session = Depends(get_db)):
             "created_at": s.created_at.isoformat() if s.created_at else None,
         })
     return result
+
+
+# ============================================================
+# RISK ALERT  –  POST /auth/risk-alert
+# ============================================================
+
+@router.post("/risk-alert")
+def trigger_risk_alert(body: RiskAlertRequest, db: Session = Depends(get_db)):
+    """
+    1. Run AI weather risk analysis for the given region + crop.
+    2. Persist a RiskEvent row.
+    3. SMS farmers IN the affected region   (alert_type = "affected").
+    4. Geocode the region; SMS farmers within 1000 km radius
+       that haven't already been notified   (alert_type = "nearby").
+    5. Return advisory + both notified lists.
+    """
+    region = body.region.strip()
+    crop   = body.crop.strip()
+
+    # ── 1. AI analysis ──────────────────────────────────────────────
+    advisory = run_risk_analysis(crop, region)
+    if not advisory:
+        raise HTTPException(status_code=502, detail="Weather API unavailable")
+
+    weather    = advisory.get("weather", {})
+    risk_level = advisory.get("risk_level", "Medium")
+    steps      = advisory.get("steps", [])
+    steps_text = " | ".join(steps[:2]) if steps else "Monitor weather closely."
+
+    # ── 2. Persist RiskEvent ─────────────────────────────────────────
+    risk_event = RiskEvent(
+        region       = region,
+        crop         = crop,
+        risk_level   = risk_level,
+        ai_summary   = advisory.get("reason", ""),
+        steps        = json.dumps(steps, ensure_ascii=False),
+        schemes      = json.dumps(advisory.get("schemes", []), ensure_ascii=False),
+        avg_temp     = weather.get("avg_temp"),
+        avg_humidity = weather.get("avg_humidity"),
+        total_rain   = weather.get("total_rain"),
+        conditions   = weather.get("conditions"),
+    )
+    db.add(risk_event)
+    db.commit()
+    db.refresh(risk_event)
+
+    all_farmers = db.query(Farmer).all()
+
+    # ── 3. SMS farmers IN the affected region ────────────────────────
+    affected_ids = set()
+    affected_notified = []
+
+    matched = [
+        f for f in all_farmers
+        if f.address and region.lower() in f.address.lower()
+    ]
+
+    for farmer in matched:
+        affected_ids.add(farmer.id)
+        language = getattr(farmer, "language", "en") or "en"
+        sms_msg  = (
+            f"[KrishiSeva Weather Alert] Region: {region} | Crop: {crop}\n"
+            f"Risk Level: {risk_level}\n"
+            f"Action: {steps_text}\n"
+            f"Stay safe and apply government schemes if needed."
+        )
+        try:
+            send_sms(farmer.phone, sms_msg, language)
+        except Exception as e:
+            print(f"[RiskAlert] SMS failed for farmer {farmer.id}: {e}")
+
+        db.add(RiskAlertLog(
+            risk_event_id = risk_event.id,
+            farmer_id     = farmer.id,
+            farmer_name   = farmer.name,
+            phone         = farmer.phone,
+            alert_type    = "affected",
+            language      = language,
+            message_sent  = sms_msg,
+        ))
+        affected_notified.append({
+            "farmer_id": farmer.id,
+            "name":      farmer.name,
+            "phone":     farmer.phone,
+            "language":  language,
+        })
+
+    # ── 4. SMS farmers in NEARBY regions (within 1000 km) ────────────
+    nearby_notified = []
+    NEARBY_RADIUS_KM = 1000
+
+    # Geocode the affected region once
+    region_lat, region_lng = get_lat_lng(region)
+
+    if region_lat is not None:
+        for farmer in all_farmers:
+            if farmer.id in affected_ids:
+                continue                          # already notified
+            if not (farmer.latitude and farmer.longitude):
+                continue                          # no geo data
+
+            dist_km = calculate_distance(
+                region_lat, region_lng,
+                farmer.latitude, farmer.longitude
+            )
+            if dist_km > NEARBY_RADIUS_KM:
+                continue
+
+            language = getattr(farmer, "language", "en") or "en"
+            nearby_msg = (
+                f"[KrishiSeva Market Advisory] Nearby region '{region}' has been "
+                f"hit by a {risk_level} weather risk for {crop}.\n"
+                f"Farmers there may face losses. Demand from their buyers could "
+                f"shift toward your area — adjust your prices and production accordingly.\n"
+                f"Distance from affected zone: {round(dist_km)} km."
+            )
+            try:
+                send_sms(farmer.phone, nearby_msg, language)
+            except Exception as e:
+                print(f"[RiskAlert] Nearby SMS failed for farmer {farmer.id}: {e}")
+
+            db.add(RiskAlertLog(
+                risk_event_id = risk_event.id,
+                farmer_id     = farmer.id,
+                farmer_name   = farmer.name,
+                phone         = farmer.phone,
+                alert_type    = "nearby",
+                language      = language,
+                message_sent  = nearby_msg,
+            ))
+            nearby_notified.append({
+                "farmer_id": farmer.id,
+                "name":      farmer.name,
+                "phone":     farmer.phone,
+                "language":  language,
+                "distance_km": round(dist_km),
+            })
+    else:
+        print(f"[RiskAlert] Could not geocode '{region}' — skipping nearby broadcast.")
+
+    db.commit()
+
+    # ── 5. Return response ───────────────────────────────────────────
+    return {
+        "risk_event_id":         risk_event.id,
+        "region":                region,
+        "crop":                  crop,
+        "risk_level":            risk_level,
+        "reason":                advisory.get("reason"),
+        "steps":                 steps,
+        "schemes":               advisory.get("schemes", []),
+        "weather":               weather,
+        "farmers_notified":      affected_notified,      # in the affected region
+        "nearby_farmers_notified": nearby_notified,      # within 1000 km
+    }
+
+
+# ============================================================
+# ADMIN – LIST ALL RISK ALERTS
+# ============================================================
+
+@router.get("/admin/risk-alerts")
+def admin_get_risk_alerts(db: Session = Depends(get_db)):
+    """Return all RiskEvent rows newest-first with separate affected/nearby counts."""
+    events = db.query(RiskEvent).order_by(RiskEvent.created_at.desc()).all()
+    result = []
+    for ev in events:
+        affected_count = (
+            db.query(RiskAlertLog)
+            .filter(RiskAlertLog.risk_event_id == ev.id,
+                    RiskAlertLog.alert_type == "affected")
+            .count()
+        )
+        nearby_count = (
+            db.query(RiskAlertLog)
+            .filter(RiskAlertLog.risk_event_id == ev.id,
+                    RiskAlertLog.alert_type == "nearby")
+            .count()
+        )
+        result.append({
+            "id":              ev.id,
+            "region":          ev.region,
+            "crop":            ev.crop,
+            "risk_level":      ev.risk_level,
+            "ai_summary":      ev.ai_summary,
+            "steps":           ev.steps,
+            "schemes":         ev.schemes,
+            "avg_temp":        ev.avg_temp,
+            "avg_humidity":    ev.avg_humidity,
+            "total_rain":      ev.total_rain,
+            "conditions":      ev.conditions,
+            "affected_count":  affected_count,
+            "nearby_count":    nearby_count,
+            "farmers_notified": affected_count + nearby_count,  # total (backwards compat)
+            "created_at":      ev.created_at.isoformat() if ev.created_at else None,
+        })
+    return result
+
 

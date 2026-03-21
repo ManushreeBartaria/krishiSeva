@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { adminGetAllEvents, adminGetNearbyFarmers, adminGetPriceSuggestions } from '../../api/api';
+import {
+  adminGetAllEvents,
+  adminGetNearbyFarmers,
+  adminGetPriceSuggestions,
+  triggerRiskAlert,
+  adminGetRiskAlerts,
+} from '../../api/api';
+
+// ─── Shared ──────────────────────────────────────────────────────────────────
 
 function Section({ icon, title, children }) {
   return (
@@ -16,8 +24,18 @@ function Section({ icon, title, children }) {
 }
 
 function formatDate(dt) {
-  return dt ? new Date(dt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  return dt
+    ? new Date(dt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
 }
+
+const RISK_COLORS = {
+  Low:    { bg: '#d1fae5', color: '#065f46', icon: '✅' },
+  Medium: { bg: '#fef3c7', color: '#92400e', icon: '⚠️' },
+  High:   { bg: '#fee2e2', color: '#991b1b', icon: '🚨' },
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -41,6 +59,15 @@ export default function AdminDashboard() {
   const [eventsLoaded, setEL]   = useState(false);
   const [farmersSearched, setFS] = useState(false);
   const [suggsLoaded, setSL]    = useState(false);
+
+  // ── Risk Alert state ───────────────────────────────────────────────────────
+  const [riskRegion, setRiskRegion]   = useState('');
+  const [riskCrop, setRiskCrop]       = useState('');
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [riskResult, setRiskResult]   = useState(null);   // latest advisory
+  const [pastAlerts, setPastAlerts]   = useState([]);
+  const [alertsLoaded, setAL]         = useState(false);
+  const [expandedAlert, setExpandedAlert] = useState(null);
 
   function notify(msg, type = 'success') {
     setStatus({ msg, type });
@@ -83,9 +110,37 @@ export default function AdminDashboard() {
     } finally { setLoading(false); }
   }
 
+  async function loadRiskAlerts() {
+    try {
+      const res = await adminGetRiskAlerts();
+      setPastAlerts(res.data);
+      setAL(true);
+    } catch {
+      notify('Could not load past risk alerts.', 'error');
+    }
+  }
+
+  async function handleRiskAlert(e) {
+    e.preventDefault();
+    if (!riskRegion.trim() || !riskCrop.trim()) return;
+    setRiskLoading(true);
+    setRiskResult(null);
+    try {
+      const res = await triggerRiskAlert(riskRegion.trim(), riskCrop.trim());
+      setRiskResult(res.data);
+      // Refresh the past-alerts list
+      loadRiskAlerts();
+      const n = res.data.farmers_notified?.length || 0;
+      notify(`Analysis done! ${n} farmer(s) notified via SMS.`);
+    } catch (err) {
+      notify(err?.response?.data?.detail || 'Risk analysis failed.', 'error');
+    } finally { setRiskLoading(false); }
+  }
+
   useEffect(() => {
-    if (tab === 'events' && !eventsLoaded) loadEvents();
-    if (tab === 'suggestions' && !suggsLoaded) loadPriceSuggestions();
+    if (tab === 'events'      && !eventsLoaded) loadEvents();
+    if (tab === 'suggestions' && !suggsLoaded)  loadPriceSuggestions();
+    if (tab === 'risk'        && !alertsLoaded) loadRiskAlerts();
   }, [tab]);
 
   const EVENT_COLORS = {
@@ -97,6 +152,154 @@ export default function AdminDashboard() {
     other:     { bg: '#f3f4f6', color: '#374151' },
   };
 
+  // ─── Advisory card helper ──────────────────────────────────────────────────
+  function AdvisoryCard({ data }) {
+    const rc = RISK_COLORS[data.risk_level] || RISK_COLORS.Medium;
+    const schemes = Array.isArray(data.schemes) ? data.schemes : [];
+    const steps   = Array.isArray(data.steps)   ? data.steps   : [];
+    const w       = data.weather || {};
+
+    return (
+      <div style={{ marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+        {/* Risk badge + weather */}
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ background: rc.bg, color: rc.color, borderRadius: 'var(--radius-lg)', padding: '20px 28px', fontWeight: 800, fontSize: '22px', display: 'flex', alignItems: 'center', gap: '10px', flex: '0 0 auto' }}>
+            <span>{rc.icon}</span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 500, opacity: .8 }}>Risk Level</div>
+              <div>{data.risk_level}</div>
+            </div>
+          </div>
+
+          {w.avg_temp !== undefined && (
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+              {[
+                { label: 'Avg Temp', value: `${w.avg_temp}°C`, icon: '🌡️' },
+                { label: 'Humidity', value: `${w.avg_humidity}%`, icon: '💧' },
+                { label: 'Rainfall', value: `${w.total_rain} mm`, icon: '🌧️' },
+              ].map(s => (
+                <div key={s.label} style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', minWidth: '120px' }}>
+                  <div style={{ fontSize: '20px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700 }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>{s.label}</div>
+                </div>
+              ))}
+              {w.conditions && (
+                <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', minWidth: '120px' }}>
+                  <div style={{ fontSize: '20px' }}>☁️</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600 }}>{w.conditions}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>Conditions</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* AI Reason */}
+        {data.reason && (
+          <div style={{ background: '#f8f7ff', border: '1px solid #e9d5ff', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '8px', color: '#5b21b6' }}>🤖 AI Analysis</div>
+            <p style={{ color: 'var(--gray-700)', lineHeight: 1.7, fontSize: '14px' }}>{data.reason}</p>
+          </div>
+        )}
+
+        {/* Steps + Schemes side-by-side */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+
+          {steps.length > 0 && (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+              <div style={{ fontWeight: 700, marginBottom: '12px', color: '#065f46' }}>🌿 Recommended Actions</div>
+              <ol style={{ paddingLeft: '18px', margin: 0 }}>
+                {steps.map((s, i) => (
+                  <li key={i} style={{ color: 'var(--gray-700)', fontSize: '14px', marginBottom: '8px', lineHeight: 1.6 }}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {schemes.length > 0 && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+              <div style={{ fontWeight: 700, marginBottom: '12px', color: '#92400e' }}>🏛️ Government Schemes</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {schemes.map((sc, i) => (
+                  <div key={i} style={{ background: 'white', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #fef3c7' }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{sc.name}</div>
+                    {sc.summary && <p style={{ fontSize: '12px', color: 'var(--gray-500)', margin: '0 0 6px' }}>{sc.summary}</p>}
+                    {sc.link && (
+                      <a href={sc.link} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 600, textDecoration: 'none' }}>
+                        🔗 Apply / Learn More
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Farmers notified — two groups */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+
+          {/* Affected farmers */}
+          <div style={{ background: 'var(--white)', border: '1px solid #fca5a5', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '12px' }}>
+              🚨 Affected Farmers SMS'd
+              <span style={{ marginLeft: '10px', background: '#fee2e2', color: '#991b1b', padding: '2px 10px', borderRadius: '999px', fontSize: '13px' }}>
+                {data.farmers_notified?.length ?? 0}
+              </span>
+            </div>
+            {!data.farmers_notified?.length ? (
+              <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>
+                No registered farmers found in <strong>{data.region}</strong>.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {data.farmers_notified.map((f, i) => (
+                  <div key={i} style={{ background: '#fff5f5', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: '13px', border: '1px solid #fecaca' }}>
+                    <div style={{ fontWeight: 700 }}>🌾 {f.name}</div>
+                    {f.phone    && <div style={{ color: 'var(--gray-500)' }}>📞 {f.phone}</div>}
+                    {f.language && <div style={{ color: 'var(--gray-400)' }}>🌐 {f.language}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Nearby farmers */}
+          <div style={{ background: 'var(--white)', border: '1px solid #93c5fd', borderRadius: 'var(--radius-lg)', padding: '18px 20px' }}>
+            <div style={{ fontWeight: 700, marginBottom: '12px' }}>
+              📡 Nearby Farmers SMS'd
+              <span style={{ marginLeft: '10px', background: '#dbeafe', color: '#1e40af', padding: '2px 10px', borderRadius: '999px', fontSize: '13px' }}>
+                {data.nearby_farmers_notified?.length ?? 0}
+              </span>
+              <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--gray-400)', fontWeight: 400 }}>(within 1000 km)</span>
+            </div>
+            {!data.nearby_farmers_notified?.length ? (
+              <p style={{ color: 'var(--gray-400)', fontSize: '14px' }}>
+                No registered farmers found within 1000 km — they'll be auto-notified as they register.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {data.nearby_farmers_notified.map((f, i) => (
+                  <div key={i} style={{ background: '#eff6ff', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: '13px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ fontWeight: 700 }}>🌾 {f.name}</div>
+                    {f.distance_km != null && <div style={{ color: '#1e40af', fontSize: '12px', fontWeight: 600 }}>📍 {f.distance_km} km away</div>}
+                    {f.phone    && <div style={{ color: 'var(--gray-500)' }}>📞 {f.phone}</div>}
+                    {f.language && <div style={{ color: 'var(--gray-400)' }}>🌐 {f.language}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar role="admin" onLogout={() => { localStorage.removeItem('ks_session'); navigate('/'); }} />
@@ -111,9 +314,10 @@ export default function AdminDashboard() {
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {[
-              { label: 'Farmers Found',    value: farmersSearched ? farmers.length : '—', icon: '🌾' },
-              { label: 'Organizer Events', value: eventsLoaded ? events.length : '—', icon: '📋' },
-              { label: 'Price Alerts',     value: suggsLoaded ? priceSuggs.length : '—', icon: '💡' },
+              { label: 'Farmers Found',    value: farmersSearched ? farmers.length : '—',    icon: '🌾' },
+              { label: 'Organizer Events', value: eventsLoaded    ? events.length  : '—',    icon: '📋' },
+              { label: 'Price Alerts',     value: suggsLoaded     ? priceSuggs.length : '—', icon: '💡' },
+              { label: 'Risk Alerts',      value: alertsLoaded    ? pastAlerts.length : '—', icon: '🌦️' },
             ].map(s => (
               <div key={s.label} style={{ background: 'rgba(255,255,255,.12)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
                 <div style={{ fontSize: '22px' }}>{s.icon}</div>
@@ -129,7 +333,12 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', background: 'var(--white)', borderRadius: 'var(--radius-xl)', padding: '6px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--gray-200)', width: 'fit-content', flexWrap: 'wrap' }}>
-          {[['farmers', '📍 Nearby Farmers'], ['events', '📋 Organizer Events'], ['suggestions', '💡 Price Suggestions']].map(([id, label]) => (
+          {[
+            ['farmers',     '📍 Nearby Farmers'],
+            ['events',      '📋 Organizer Events'],
+            ['suggestions', '💡 Price Suggestions'],
+            ['risk',        '🌦️ Risk Alerts'],
+          ].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: '10px 24px', borderRadius: 'var(--radius-lg)', border: 'none', background: tab === id ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'transparent', color: tab === id ? 'white' : 'var(--gray-500)', fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap' }}>
               {label}
@@ -219,16 +428,13 @@ export default function AdminDashboard() {
                             <span className="badge" style={{ background: '#f0fdf4', color: '#166534' }}>#{ev.id}</span>
                           </div>
                         </div>
-
                         <p style={{ color: 'var(--gray-600)', fontSize: '14px', lineHeight: 1.5 }}>{ev.description}</p>
-
                         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px' }}>
                           <span style={{ color: 'var(--gray-600)' }}>📍 <strong>{ev.place}</strong></span>
                           <span style={{ color: 'var(--gray-600)' }}>📦 <strong>{ev.quantity}</strong> units</span>
                           <span style={{ color: 'var(--green-700)' }}>💰 <strong>₹{ev.budget}</strong></span>
                           <span style={{ color: 'var(--gray-600)' }}>📅 By <strong>{formatDate(ev.required_by)}</strong></span>
                         </div>
-
                         <div style={{ fontSize: '12px', color: 'var(--gray-400)', borderTop: '1px solid var(--gray-100)', paddingTop: '8px', marginTop: '2px' }}>
                           Posted on {formatDate(ev.created_at)}
                         </div>
@@ -298,6 +504,190 @@ export default function AdminDashboard() {
             )}
           </Section>
         )}
+
+        {/* ── RISK ALERTS ─────────────────────────────────────────────────────── */}
+        {tab === 'risk' && (
+          <>
+            {/* Analyze & Notify form */}
+            <Section icon="🌦️" title="Analyze Weather Risk & Notify Farmers">
+              <p style={{ color: 'var(--gray-500)', fontSize: '14px', marginBottom: '20px' }}>
+                Enter a region and crop. The AI will fetch the <strong>10-day forecast</strong>, assess risk, generate action steps &amp; government schemes, and send an SMS to all registered farmers in that region <strong>in their regional language</strong>.
+              </p>
+
+              <form onSubmit={handleRiskAlert} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div className="form-group" style={{ flex: 2, minWidth: '240px' }}>
+                  <label>Region / City / State</label>
+                  <input
+                    placeholder="e.g. Nagpur, Maharashtra"
+                    value={riskRegion}
+                    onChange={e => setRiskRegion(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1, minWidth: '180px' }}>
+                  <label>Crop Name</label>
+                  <input
+                    placeholder="e.g. Cotton, Wheat, Rice"
+                    value={riskCrop}
+                    onChange={e => setRiskCrop(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={riskLoading}
+                  style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', boxShadow: '0 4px 20px rgba(239,68,68,.35)', whiteSpace: 'nowrap' }}
+                >
+                  {riskLoading
+                    ? <><span className="spinner" /> Analyzing…</>
+                    : '🌩️ Analyze & Notify'}
+                </button>
+              </form>
+
+              {riskLoading && (
+                <div style={{ textAlign: 'center', padding: '48px', color: 'var(--gray-400)' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '12px', animation: 'spin 2s linear infinite', display: 'inline-block' }}>🌦️</div>
+                  <p>Fetching weather forecast and running AI analysis…</p>
+                </div>
+              )}
+
+              {riskResult && !riskLoading && <AdvisoryCard data={riskResult} />}
+            </Section>
+
+            {/* Past Risk Alerts table */}
+            <Section icon="📜" title="Past Risk Alerts">
+              {!alertsLoaded ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <span className="spinner" style={{ borderTopColor: '#ef4444', borderColor: 'var(--gray-200)' }} />
+                </div>
+              ) : pastAlerts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-400)' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>📭</div>
+                  <p>No risk alerts have been triggered yet. Use the form above to run your first analysis.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Date</th>
+                          <th>Region</th>
+                          <th>Crop</th>
+                          <th>Risk Level</th>
+                          <th>🚨 Affected</th>
+                          <th>📡 Nearby</th>
+                          <th>Weather</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pastAlerts.map(ev => {
+                          const rc = RISK_COLORS[ev.risk_level] || RISK_COLORS.Medium;
+                          const isExp = expandedAlert === ev.id;
+                          return (
+                            <React.Fragment key={ev.id}>
+                              <tr>
+                                <td>#{ev.id}</td>
+                                <td style={{ fontSize: '12px', color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
+                                  {formatDate(ev.created_at)}
+                                </td>
+                                <td><strong>{ev.region}</strong></td>
+                                <td>
+                                  <span className="badge badge-green" style={{ textTransform: 'capitalize' }}>{ev.crop}</span>
+                                </td>
+                                <td>
+                                  <span style={{ background: rc.bg, color: rc.color, padding: '3px 10px', borderRadius: '999px', fontWeight: 700, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    {rc.icon} {ev.risk_level}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <span style={{ background: '#fee2e2', color: '#991b1b', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, fontSize: '12px' }}>
+                                    {ev.affected_count ?? ev.farmers_notified}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, fontSize: '12px' }}>
+                                    {ev.nearby_count ?? 0}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
+                                  {ev.avg_temp != null ? `${ev.avg_temp}°C · ${ev.avg_humidity}% · ${ev.total_rain}mm` : '—'}
+                                </td>
+                                <td>
+                                  <button
+                                    onClick={() => setExpandedAlert(isExp ? null : ev.id)}
+                                    style={{ background: 'none', border: '1px solid var(--gray-300)', borderRadius: 'var(--radius-md)', padding: '4px 10px', cursor: 'pointer', fontSize: '12px', color: 'var(--gray-600)' }}
+                                  >
+                                    {isExp ? '▲ Collapse' : '▼ Expand'}
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {isExp && (
+                                <tr>
+                                  <td colSpan={8} style={{ padding: '0 8px 16px' }}>
+                                    <div style={{ background: 'var(--gray-50)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+                                      {ev.ai_summary && (
+                                        <div style={{ marginBottom: '14px' }}>
+                                          <div style={{ fontWeight: 700, marginBottom: '6px', color: '#5b21b6' }}>🤖 AI Analysis</div>
+                                          <p style={{ fontSize: '13px', color: 'var(--gray-600)', lineHeight: 1.7 }}>{ev.ai_summary}</p>
+                                        </div>
+                                      )}
+                                      {ev.steps && (() => {
+                                        try {
+                                          const s = JSON.parse(ev.steps);
+                                          if (s.length) return (
+                                            <div style={{ marginBottom: '14px' }}>
+                                              <div style={{ fontWeight: 700, marginBottom: '6px', color: '#065f46' }}>🌿 Actions</div>
+                                              <ol style={{ paddingLeft: '18px', margin: 0 }}>
+                                                {s.map((st, i) => <li key={i} style={{ fontSize: '13px', color: 'var(--gray-600)', marginBottom: '4px' }}>{st}</li>)}
+                                              </ol>
+                                            </div>
+                                          );
+                                        } catch { return null; }
+                                        return null;
+                                      })()}
+                                      {ev.schemes && (() => {
+                                        try {
+                                          const sc = JSON.parse(ev.schemes);
+                                          if (sc.length) return (
+                                            <div>
+                                              <div style={{ fontWeight: 700, marginBottom: '6px', color: '#92400e' }}>🏛️ Schemes</div>
+                                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                                {sc.map((s, i) => (
+                                                  <div key={i} style={{ background: 'white', border: '1px solid #fde68a', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: '13px', maxWidth: '300px' }}>
+                                                    <div style={{ fontWeight: 700 }}>{s.name}</div>
+                                                    {s.summary && <div style={{ color: 'var(--gray-500)', fontSize: '12px', marginTop: '3px' }}>{s.summary}</div>}
+                                                    {s.link && <a href={s.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 600 }}>🔗 Apply</a>}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        } catch { return null; }
+                                        return null;
+                                      })()}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button className="btn btn-outline" onClick={() => { setAL(false); loadRiskAlerts(); }}
+                    style={{ marginTop: '16px', fontSize: '13px' }}>🔄 Refresh</button>
+                </>
+              )}
+            </Section>
+          </>
+        )}
+
       </div>
     </>
   );

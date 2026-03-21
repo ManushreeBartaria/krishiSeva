@@ -247,3 +247,30 @@ class FarmerCraftItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# -------------------------------
+# RISK ALERT
+# -------------------------------
+class RiskAlertRequest(BaseModel):
+    region: str
+    crop: str
+
+
+class RiskAlertAdminRow(BaseModel):
+    id: int
+    region: str
+    crop: str
+    risk_level: Optional[str]
+    ai_summary: Optional[str]
+    steps: Optional[str]       # JSON string
+    schemes: Optional[str]     # JSON string
+    avg_temp: Optional[float]
+    avg_humidity: Optional[float]
+    total_rain: Optional[float]
+    conditions: Optional[str]
+    farmers_notified: int = 0
+    created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True

@@ -49,9 +49,13 @@ export const getNearbyFarmers = (address, radius = 10) =>
   api.get('/nearby-farmers', { params: { address, radius } });
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
-export const adminGetAllEvents      = ()                     => api.get('/admin/all-events');
-export const adminGetNearbyFarmers  = (address, radius = 50) =>
+export const adminGetAllEvents        = ()                     => api.get('/admin/all-events');
+export const adminGetNearbyFarmers    = (address, radius = 50) =>
   api.get('/admin/nearby-farmers', { params: { address, radius } });
-export const adminGetPriceSuggestions = () => api.get('/admin/price-suggestions');
+export const adminGetPriceSuggestions = ()                     => api.get('/admin/price-suggestions');
+
+// ── RISK ALERTS ───────────────────────────────────────────────────────────────
+export const triggerRiskAlert   = (region, crop) => api.post('/risk-alert', { region, crop });
+export const adminGetRiskAlerts = ()              => api.get('/admin/risk-alerts');
 
 export default api;
