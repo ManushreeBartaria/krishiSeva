@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { adminGetAllEvents, adminGetNearbyFarmers } from '../../api/api';
+import { adminGetAllEvents, adminGetNearbyFarmers, adminGetPriceSuggestions } from '../../api/api';
 
 function Section({ icon, title, children }) {
   return (
@@ -35,10 +35,12 @@ export default function AdminDashboard() {
   const [radius, setRadius]     = useState(50);
   const [farmers, setFarmers]   = useState([]);
   const [events, setEvents]     = useState([]);
+  const [priceSuggs, setPriceSuggs] = useState([]);
   const [loading, setLoading]   = useState(false);
   const [status, setStatus]     = useState({ msg: '', type: '' });
   const [eventsLoaded, setEL]   = useState(false);
   const [farmersSearched, setFS] = useState(false);
+  const [suggsLoaded, setSL]    = useState(false);
 
   function notify(msg, type = 'success') {
     setStatus({ msg, type });
@@ -70,8 +72,20 @@ export default function AdminDashboard() {
     } finally { setLoading(false); }
   }
 
+  async function loadPriceSuggestions() {
+    setLoading(true);
+    try {
+      const res = await adminGetPriceSuggestions();
+      setPriceSuggs(res.data);
+      setSL(true);
+    } catch {
+      notify('Could not load price suggestions.', 'error');
+    } finally { setLoading(false); }
+  }
+
   useEffect(() => {
     if (tab === 'events' && !eventsLoaded) loadEvents();
+    if (tab === 'suggestions' && !suggsLoaded) loadPriceSuggestions();
   }, [tab]);
 
   const EVENT_COLORS = {
@@ -97,8 +111,9 @@ export default function AdminDashboard() {
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {[
-              { label: 'Farmers Found', value: farmersSearched ? farmers.length : '—', icon: '🌾' },
+              { label: 'Farmers Found',    value: farmersSearched ? farmers.length : '—', icon: '🌾' },
               { label: 'Organizer Events', value: eventsLoaded ? events.length : '—', icon: '📋' },
+              { label: 'Price Alerts',     value: suggsLoaded ? priceSuggs.length : '—', icon: '💡' },
             ].map(s => (
               <div key={s.label} style={{ background: 'rgba(255,255,255,.12)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
                 <div style={{ fontSize: '22px' }}>{s.icon}</div>
@@ -113,8 +128,8 @@ export default function AdminDashboard() {
         {status.msg && <div className={`alert ${status.type === 'error' ? 'alert-error' : 'alert-success'}`} style={{ marginBottom: '24px' }}>{status.type === 'error' ? '⚠️' : '✅'} {status.msg}</div>}
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', background: 'var(--white)', borderRadius: 'var(--radius-xl)', padding: '6px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--gray-200)', width: 'fit-content' }}>
-          {[['farmers', '📍 Nearby Farmers'], ['events', '📋 Organizer Events']].map(([id, label]) => (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '28px', background: 'var(--white)', borderRadius: 'var(--radius-xl)', padding: '6px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--gray-200)', width: 'fit-content', flexWrap: 'wrap' }}>
+          {[['farmers', '📍 Nearby Farmers'], ['events', '📋 Organizer Events'], ['suggestions', '💡 Price Suggestions']].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: '10px 24px', borderRadius: 'var(--radius-lg)', border: 'none', background: tab === id ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'transparent', color: tab === id ? 'white' : 'var(--gray-500)', fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap' }}>
               {label}
@@ -222,6 +237,64 @@ export default function AdminDashboard() {
                   })}
                 </div>
               </>
+            )}
+          </Section>
+        )}
+
+        {/* ── PRICE SUGGESTIONS ── */}
+        {tab === 'suggestions' && (
+          <Section icon="💡" title="ML Price Suggestions">
+            <p style={{ color: 'var(--gray-500)', fontSize: '14px', marginBottom: '20px' }}>
+              These farmers listed their crops <strong>below the ML-predicted market price</strong>. They've been notified via SMS in their language.
+            </p>
+            {!suggsLoaded ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}><span className="spinner" style={{ borderTopColor: '#8b5cf6', borderColor: 'var(--gray-200)' }} /></div>
+            ) : priceSuggs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-400)' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+                <p>No under-priced crops detected. All farmers are pricing fairly!</p>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Farmer</th><th>Crop</th><th>Listed ₹</th>
+                      <th>Suggested ₹</th><th>Gap ₹</th><th>Region</th><th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {priceSuggs.map(s => {
+                      const gap = (s.predicted_price - s.entered_price).toFixed(2);
+                      return (
+                        <tr key={s.id}>
+                          <td>#{s.id}</td>
+                          <td>
+                            <strong>{s.farmer_name}</strong>
+                            {s.farmer_phone && <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>📞 {s.farmer_phone}</div>}
+                          </td>
+                          <td><span className="badge badge-green" style={{ textTransform: 'capitalize' }}>{s.product_name}</span></td>
+                          <td><span style={{ color: '#dc2626', fontWeight: 700 }}>₹{s.entered_price}</span></td>
+                          <td><span style={{ color: '#16a34a', fontWeight: 700 }}>₹{s.predicted_price}</span></td>
+                          <td>
+                            <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '999px', fontSize: '12px', fontWeight: 700 }}>
+                              +₹{gap}
+                            </span>
+                          </td>
+                          <td>{s.region || '—'}</td>
+                          <td style={{ fontSize: '12px', color: 'var(--gray-400)' }}>
+                            {s.created_at ? new Date(s.created_at).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {suggsLoaded && (
+              <button className="btn btn-outline" onClick={() => { setSL(false); loadPriceSuggestions(); }}
+                style={{ marginTop: '16px', fontSize: '13px' }}>🔄 Refresh</button>
             )}
           </Section>
         )}

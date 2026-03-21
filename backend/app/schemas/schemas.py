@@ -193,4 +193,57 @@ class CraftProductListResponse(BaseModel):
     farm_name: Optional[str] = None
 
     class Config:
-        from_attributes = True
+        from_attributes = True
+
+
+# -------------------------------
+# PRICE SUGGESTION (admin alert)
+# -------------------------------
+class PriceSuggestionResponse(BaseModel):
+    id: int
+    farmer_id: int
+    product_id: int
+    product_name: str
+    entered_price: float
+    predicted_price: float
+    region: Optional[str]
+    is_acknowledged: str
+    created_at: datetime
+    farmer_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# -------------------------------
+# PRICE EDIT
+# -------------------------------
+class FoodPriceUpdate(BaseModel):
+    price: float
+
+
+# -------------------------------
+# FARMER PRODUCT LISTING
+# -------------------------------
+class FarmerFoodItem(BaseModel):
+    id: int
+    name: str
+    price: float
+    quantity: Optional[str]
+    farmer_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class FarmerCraftItem(BaseModel):
+    id: int
+    name: str
+    price: float
+    description: Optional[str]
+    image_url: Optional[str]
+    video_url: Optional[str]
+    farmer_id: int
+
+    class Config:
+        from_attributes = True

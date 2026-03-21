@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connections import get_db
-from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest, Admin
+from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest, Admin, PriceSuggestion
 from app.schemas.schemas import (
     FarmerRegister, FarmerResponse,
     BuyerRegister, BuyerResponse,
@@ -14,7 +14,10 @@ from app.schemas.schemas import (
     OrganizerRequestCreate, OrganizerRequestResponse,
     AdminRegister, AdminResponse,
     FoodProductListResponse, CraftProductListResponse,
+    PriceSuggestionResponse, FoodPriceUpdate,
+    FarmerFoodItem, FarmerCraftItem,
 )
+from app.utils.price_predictor import get_predicted_price
 from app.utils.security import hash_password
 from fastapi import File, UploadFile, Form
 import shutil
@@ -134,6 +137,38 @@ def add_food_product(farmer_id: int, product: FoodProductCreate, db: Session = D
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
+
+    # ── Price prediction check ──────────────────────────────────────────────
+    try:
+        region = farmer.address or ""
+        predicted = get_predicted_price(product.name, region)
+
+        if predicted is not None and product.price < predicted:
+            # Log suggestion to DB
+            suggestion = PriceSuggestion(
+                farmer_id=farmer_id,
+                product_id=new_product.id,
+                product_name=product.name,
+                entered_price=product.price,
+                predicted_price=predicted,
+                region=region,
+            )
+            db.add(suggestion)
+            db.commit()
+
+            # Send SMS alert to farmer
+            msg = (
+                f"Price Alert for {product.name}: "
+                f"You listed it at Rs.{product.price}, but the market price "
+                f"is around Rs.{predicted}. "
+                f"Consider updating your price to earn more!"
+            )
+            language = getattr(farmer, "language", "en")
+            send_sms(farmer.phone, msg, language)
+    except Exception as e:
+        # Never fail the product creation because of price check
+        print(f"[PriceCheck] Error: {e}")
+    # ────────────────────────────────────────────────────────────────────────
 
     return new_product
 
@@ -424,4 +459,81 @@ def admin_nearby_farmers(
                     "phone": farmer.phone,
                     "distance_km": round(distance, 2)
                 })
-    return nearby
+    return nearby
+
+
+# ============================================================
+# EDIT FOOD PRODUCT PRICE
+# ============================================================
+
+@router.put("/food/{product_id}/price", response_model=FoodProductResponse)
+def update_food_price(product_id: int, body: FoodPriceUpdate, db: Session = Depends(get_db)):
+    product = db.query(FoodProduct).filter(FoodProduct.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Food product not found")
+
+    product.price = body.price
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+# ============================================================
+# FARMER – VIEW ALL OWN PRODUCTS
+# ============================================================
+
+@router.get("/farmer/{farmer_id}/products")
+def get_farmer_products(farmer_id: int, db: Session = Depends(get_db)):
+    farmer = db.query(Farmer).filter(Farmer.id == farmer_id).first()
+    if not farmer:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+
+    food_items = db.query(FoodProduct).filter(FoodProduct.farmer_id == farmer_id).all()
+    craft_items = db.query(CraftProduct).filter(CraftProduct.farmer_id == farmer_id).all()
+
+    return {
+        "food": [
+            {
+                "id": p.id, "name": p.name,
+                "price": p.price, "quantity": p.quantity,
+                "farmer_id": p.farmer_id,
+            }
+            for p in food_items
+        ],
+        "craft": [
+            {
+                "id": p.id, "name": p.name,
+                "price": p.price, "description": p.description,
+                "image_url": p.image_url, "video_url": p.video_url,
+                "farmer_id": p.farmer_id,
+            }
+            for p in craft_items
+        ],
+    }
+
+
+# ============================================================
+# ADMIN – PRICE SUGGESTIONS
+# ============================================================
+
+@router.get("/admin/price-suggestions")
+def admin_get_price_suggestions(db: Session = Depends(get_db)):
+    suggestions = db.query(PriceSuggestion).order_by(PriceSuggestion.created_at.desc()).all()
+    result = []
+    for s in suggestions:
+        farmer = db.query(Farmer).filter(Farmer.id == s.farmer_id).first()
+        result.append({
+            "id": s.id,
+            "farmer_id": s.farmer_id,
+            "farmer_name": farmer.name if farmer else "Unknown",
+            "farmer_phone": farmer.phone if farmer else None,
+            "product_id": s.product_id,
+            "product_name": s.product_name,
+            "entered_price": s.entered_price,
+            "predicted_price": s.predicted_price,
+            "region": s.region,
+            "is_acknowledged": s.is_acknowledged,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        })
+    return result
+
