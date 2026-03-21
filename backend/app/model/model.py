@@ -92,4 +92,14 @@ class OrganizerRequest(Base):
     event_type = Column(String(50))  
     # mela / birthday / wedding / bulk
 
-    created_at = Column(DateTime, default=func.current_timestamp())    
+    created_at = Column(DateTime, default=func.current_timestamp())
+
+
+class Admin(Base):
+    __tablename__ = "admins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    phone = Column(String(20))

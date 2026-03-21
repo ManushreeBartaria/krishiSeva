@@ -1,6 +1,8 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyc
 *$py.class
 *.so
 .Python
@@ -29,6 +31,9 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv
+microvenv/
+.ENV
 
 # Environment files
 .env
@@ -67,6 +72,9 @@ logs/
 htmlcov/
 .tox/
 .hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Node modules (if any frontend in this folder)
 node_modules/
@@ -92,3 +100,10 @@ ehthumbs.db
 .cache/
 *.tmp
 temp/
+.env.prod
+.env.dev
+*.bak
+dist/
+build/
+redis.rdb
+dump.rdb

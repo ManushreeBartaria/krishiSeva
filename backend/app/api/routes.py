@@ -1,9 +1,9 @@
-from itertools import product
+# (itertools.product not needed)
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connections import get_db
-from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest
+from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest, Admin
 from app.schemas.schemas import (
     FarmerRegister, FarmerResponse,
     BuyerRegister, BuyerResponse,
@@ -11,7 +11,9 @@ from app.schemas.schemas import (
     FoodProductCreate, FoodProductResponse,
     CraftProductCreate, CraftProductResponse,
     OrderCreate, OrderResponse,
-    OrganizerRequestCreate, OrganizerRequestResponse
+    OrganizerRequestCreate, OrganizerRequestResponse,
+    AdminRegister, AdminResponse,
+    FoodProductListResponse, CraftProductListResponse,
 )
 from app.utils.security import hash_password
 from fastapi import File, UploadFile, Form
@@ -27,6 +29,9 @@ from app.model.model import Farmer
 
 # Ensure the uploads directory exists
 os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/images", exist_ok=True)
+os.makedirs("uploads/videos", exist_ok=True)
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -322,4 +327,101 @@ def get_nearby_farmers(
                     "distance_km": round(distance, 2)
                 })
 
-    return nearby    
+    return nearby
+
+
+# ============================================================
+# PRODUCT LISTING ROUTES (used by Buyer / Admin)
+# ============================================================
+
+@router.get("/products/food", response_model=list[FoodProductListResponse])
+def get_all_food_products(db: Session = Depends(get_db)):
+    products = db.query(FoodProduct).all()
+    result = []
+    for p in products:
+        farmer = db.query(Farmer).filter(Farmer.id == p.farmer_id).first()
+        result.append(FoodProductListResponse(
+            id=p.id,
+            name=p.name,
+            price=p.price,
+            quantity=p.quantity,
+            farmer_id=p.farmer_id,
+            farmer_name=farmer.name if farmer else None,
+            farm_name=farmer.farm_name if farmer else None,
+        ))
+    return result
+
+
+@router.get("/products/craft", response_model=list[CraftProductListResponse])
+def get_all_craft_products(db: Session = Depends(get_db)):
+    products = db.query(CraftProduct).all()
+    result = []
+    for p in products:
+        farmer = db.query(Farmer).filter(Farmer.id == p.farmer_id).first()
+        result.append(CraftProductListResponse(
+            id=p.id,
+            name=p.name,
+            price=p.price,
+            description=p.description,
+            image_url=p.image_url,
+            video_url=p.video_url,
+            farmer_id=p.farmer_id,
+            farmer_name=farmer.name if farmer else None,
+            farm_name=farmer.farm_name if farmer else None,
+        ))
+    return result
+
+
+# ============================================================
+# ADMIN ROUTES
+# ============================================================
+
+@router.post("/register/admin", response_model=AdminResponse)
+def register_admin(user: AdminRegister, db: Session = Depends(get_db)):
+    if db.query(Admin).filter(Admin.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_admin = Admin(
+        name=user.name,
+        email=user.email,
+        password=hash_password(user.password),
+        phone=user.phone,
+    )
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+    return new_admin
+
+
+@router.get("/admin/all-events", response_model=list[OrganizerRequestResponse])
+def admin_get_all_events(db: Session = Depends(get_db)):
+    return db.query(OrganizerRequest).all()
+
+
+@router.get("/admin/nearby-farmers")
+def admin_nearby_farmers(
+    address: str,
+    radius: float = 50,
+    db: Session = Depends(get_db)
+):
+    from app.utils.geocode import get_lat_lng
+    lat, lon = get_lat_lng(address)
+
+    if lat is None:
+        raise HTTPException(status_code=400, detail="Invalid address")
+
+    farmers = db.query(Farmer).all()
+    nearby = []
+    for farmer in farmers:
+        if farmer.latitude and farmer.longitude:
+            distance = calculate_distance(lat, lon, farmer.latitude, farmer.longitude)
+            if distance <= radius:
+                nearby.append({
+                    "farmer_id": farmer.id,
+                    "name": farmer.name,
+                    "farm_name": farmer.farm_name,
+                    "address": farmer.address,
+                    "phone": farmer.phone,
+                    "distance_km": round(distance, 2)
+                })
+    return nearby

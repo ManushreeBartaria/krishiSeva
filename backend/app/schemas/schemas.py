@@ -142,4 +142,55 @@ class OrganizerRequestResponse(OrganizerRequestCreate):
     created_at: datetime
 
     class Config:
-        from_attributes = True        
+        from_attributes = True
+
+
+# -------------------------------
+# ADMIN
+# -------------------------------
+class AdminRegister(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: Optional[str]
+
+
+class AdminResponse(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    phone: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+# -------------------------------
+# PRODUCT LISTING (for buyers/admin)
+# -------------------------------
+class FoodProductListResponse(BaseModel):
+    id: int
+    name: str
+    price: float
+    quantity: Optional[str]
+    farmer_id: int
+    farmer_name: Optional[str] = None
+    farm_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CraftProductListResponse(BaseModel):
+    id: int
+    name: str
+    price: float
+    description: Optional[str]
+    image_url: Optional[str]
+    video_url: Optional[str]
+    farmer_id: int
+    farmer_name: Optional[str] = None
+    farm_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
