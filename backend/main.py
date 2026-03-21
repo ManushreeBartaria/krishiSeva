@@ -4,6 +4,7 @@ from app.database.connections import engine
 from app.model import model
 from app.api.routes import router as auth_router
 from fastapi.staticfiles import StaticFiles
+from app.services.order_checker import check_pending_orders
 
 
 
@@ -24,7 +25,13 @@ app.add_middleware(
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth_router)
+import threading
+from app.services.order_checker import check_pending_orders
 
+@app.on_event("startup")
+def start_background_task():
+    thread = threading.Thread(target=check_pending_orders, daemon=True)
+    thread.start()
 
 @app.get("/")
 def root():

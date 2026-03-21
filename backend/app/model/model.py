@@ -12,6 +12,9 @@ class Farmer(Base):
     phone = Column(String(20))
     address = Column(String(255))
     farm_name = Column(String(100))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    language = Column(String(50), default="en")
 
 class Buyer(Base):
     __tablename__ = "buyers"

@@ -10,9 +10,9 @@ class FarmerRegister(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str]
-    address: Optional[str]
+    address: str
     farm_name: str
-
+    language: str
 
 class FarmerResponse(BaseModel):
     id: int
@@ -108,7 +108,6 @@ class CraftProductResponse(CraftProductCreate):
 
 class OrderCreate(BaseModel):
     buyer_id: int
-    farmer_id: int
     product_type: str   # "food" or "craft"
     product_id: int
     quantity: int

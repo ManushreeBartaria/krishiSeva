@@ -16,6 +16,11 @@ from fastapi import File, UploadFile, Form
 import shutil
 import os
 import uuid
+from app.utils.geocode import get_lat_lng
+from app.utils.locations import calculate_distance
+from app.model.model import Farmer
+from app.utils.sms import send_sms
+from app.model.model import Farmer
 
 
 # Ensure the uploads directory exists
@@ -32,13 +37,22 @@ def register_farmer(user: FarmerRegister, db: Session = Depends(get_db)):
     if db.query(Farmer).filter(Farmer.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    lat, lng = get_lat_lng(user.address)
+
+    if lat is None:
+        raise HTTPException(status_code=400, detail="Invalid address")
+
     new_farmer = Farmer(
         name=user.name,
         email=user.email,
         password=hash_password(user.password),
         phone=user.phone,
         address=user.address,
-        farm_name=user.farm_name
+        farm_name=user.farm_name,
+        latitude=lat,
+        longitude=lng,
+        language=user.language
+        
     )
 
     db.add(new_farmer)
@@ -207,6 +221,20 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
+    
+        # Get farmer details
+    farmer = db.query(Farmer).filter(Farmer.id == farmer_id).first()
+
+    # Create message
+    message = f"""
+    New Order Received!
+    Product ID: {order.product_id}
+    Quantity: {order.quantity}
+    Total: ₹{total_price}
+    """
+
+    # Send SMS
+    send_sms(farmer.phone, message)
 
     return new_order    
 
@@ -257,3 +285,33 @@ def get_organizer_requests(organizer_id: int, db: Session = Depends(get_db)):
     return db.query(OrganizerRequest).filter(
         OrganizerRequest.organizer_id == organizer_id
     ).all()
+    
+@router.get("/nearby-farmers")
+def get_nearby_farmers(
+    address: str,
+    radius: float = 10,
+    db: Session = Depends(get_db)
+):
+    from app.utils.geocode import get_lat_lng
+
+    lat, lon = get_lat_lng(address)
+
+    if lat is None:
+        raise HTTPException(status_code=400, detail="Invalid address")
+
+    farmers = db.query(Farmer).all()
+
+    nearby = []
+
+    for farmer in farmers:
+        if farmer.latitude and farmer.longitude:
+            distance = calculate_distance(lat, lon, farmer.latitude, farmer.longitude)
+
+            if distance <= radius:
+                nearby.append({
+                    "farmer_id": farmer.id,
+                    "name": farmer.name,
+                    "distance_km": round(distance, 2)
+                })
+
+    return nearby    
