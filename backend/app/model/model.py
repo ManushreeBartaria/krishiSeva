@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, func
 from app.database.connections import Base
+from datetime import datetime
 
 class Farmer(Base):
     __tablename__ = "farmers"
@@ -69,3 +70,23 @@ class Order(Base):
 
     status = Column(String(50), default="pending")    
     
+class OrganizerRequest(Base):
+    __tablename__ = "organizer_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    organizer_id = Column(Integer, ForeignKey("organizers.id"))
+
+    title = Column(String(100))  # short title
+    description = Column(String(255))
+
+    place = Column(String(100))
+    quantity = Column(Integer)
+    budget = Column(Float)
+
+    required_by = Column(DateTime)
+
+    event_type = Column(String(50))  
+    # mela / birthday / wedding / bulk
+
+    created_at = Column(DateTime, default=func.current_timestamp())    

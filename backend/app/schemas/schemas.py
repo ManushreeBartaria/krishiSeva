@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 
 # -------------------------------
 # FARMER
@@ -103,3 +104,43 @@ class CraftProductResponse(CraftProductCreate):
 
     class Config:
         from_attributes = True     
+        
+
+class OrderCreate(BaseModel):
+    buyer_id: int
+    farmer_id: int
+    product_type: str   # "food" or "craft"
+    product_id: int
+    quantity: int
+
+
+class OrderResponse(BaseModel):
+    id: int
+    buyer_id: int
+    farmer_id: int
+    product_type: str
+    product_id: int
+    quantity: int
+    total_price: float
+    status: str
+
+    class Config:
+        from_attributes = True        
+        
+class OrganizerRequestCreate(BaseModel):
+    organizer_id: int
+    title: str
+    description: str
+    place: str
+    quantity: int
+    budget: float
+    required_by: datetime
+    event_type: str   # mela / birthday / wedding / bulk
+
+
+class OrganizerRequestResponse(OrganizerRequestCreate):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True        

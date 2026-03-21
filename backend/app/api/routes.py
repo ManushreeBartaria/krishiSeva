@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.connections import get_db
-from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct
+from app.model.model import Farmer, Buyer, Organizer, FoodProduct, CraftProduct, Order, OrganizerRequest
 from app.schemas.schemas import (
     FarmerRegister, FarmerResponse,
     BuyerRegister, BuyerResponse,
     OrganizerRegister, OrganizerResponse,
     FoodProductCreate, FoodProductResponse,
-    CraftProductCreate, CraftProductResponse
+    CraftProductCreate, CraftProductResponse,
+    OrderCreate, OrderResponse,
+    OrganizerRequestCreate, OrganizerRequestResponse
 )
 from app.utils.security import hash_password
 from fastapi import File, UploadFile, Form
@@ -207,3 +209,51 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db.refresh(new_order)
 
     return new_order    
+
+@router.get("/buyer/{buyer_id}", response_model=list[OrderResponse])
+def get_buyer_orders(buyer_id: int, db: Session = Depends(get_db)):
+
+    orders = db.query(Order).filter(Order.buyer_id == buyer_id).all()
+
+    return orders
+
+@router.get("/farmer/{farmer_id}", response_model=list[OrderResponse])
+def get_farmer_orders(farmer_id: int, db: Session = Depends(get_db)):
+
+    orders = db.query(Order).filter(Order.farmer_id == farmer_id).all()
+
+    return orders
+
+@router.post("/organizer-requests", response_model=OrganizerRequestResponse)
+def create_request(request: OrganizerRequestCreate, db: Session = Depends(get_db)):
+
+    organizer = db.query(Organizer).filter(Organizer.id == request.organizer_id).first()
+    if not organizer:
+        raise HTTPException(status_code=404, detail="Organizer not found")
+
+    new_request = OrganizerRequest(**request.dict())
+
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return new_request
+
+# -------------------------------
+# GET ALL REQUESTS (for farmers)
+# -------------------------------
+@router.get("/requests", response_model=list[OrganizerRequestResponse])
+def get_all_requests(db: Session = Depends(get_db)):
+
+    return db.query(OrganizerRequest).all()
+
+
+# -------------------------------
+# GET REQUESTS BY ORGANIZER
+# -------------------------------
+@router.get("/requests/{organizer_id}", response_model=list[OrganizerRequestResponse])
+def get_organizer_requests(organizer_id: int, db: Session = Depends(get_db)):
+
+    return db.query(OrganizerRequest).filter(
+        OrganizerRequest.organizer_id == organizer_id
+    ).all()
