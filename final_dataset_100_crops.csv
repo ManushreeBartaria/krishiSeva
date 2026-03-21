@@ -1,0 +1,301 @@
+crop,price,region,temp,humidity,rain,time
+rosemary,56,Odisha,30,60,0,2026-01-01
+mango,85,Maharashtra,30,60,0,2026-01-02
+pumpkin,57,Madhya Pradesh,30,60,0,2026-01-03
+pumpkin,59,Punjab,30,60,0,2026-01-04
+black pepper,57,Punjab,30,60,0,2026-01-05
+cucumber,54,Uttar Pradesh,30,60,0,2026-01-06
+potato,32,Haryana,30,60,0,2026-01-07
+kiwi,54,Punjab,30,60,0,2026-01-08
+turmeric,56,Punjab,30,60,0,2026-01-09
+coffee,155,Kerala,30,60,0,2026-01-10
+carrot,39,Odisha,30,60,0,2026-01-11
+cumin,51,Gujarat,30,60,0,2026-01-12
+papaya,62,Delhi,30,60,0,2026-01-13
+soybean,52,Tamil Nadu,30,60,0,2026-01-14
+pumpkin,62,Delhi,30,60,0,2026-01-15
+muskmelon,53,Kerala,30,60,0,2026-01-16
+cardamom,405,Uttar Pradesh,30,60,0,2026-01-17
+orange,57,Assam,30,60,0,2026-01-18
+plum,48,Madhya Pradesh,30,60,0,2026-01-19
+pigeon pea,53,Uttar Pradesh,30,60,0,2026-01-20
+cocoa,55,Gujarat,30,60,0,2026-01-21
+pomegranate,56,Assam,30,60,0,2026-01-22
+bitter gourd,57,Tamil Nadu,30,60,0,2026-01-23
+pomegranate,59,Odisha,30,60,0,2026-01-24
+papaya,63,Maharashtra,30,60,0,2026-01-25
+ginger,58,Tamil Nadu,30,60,0,2026-01-26
+cherry,55,Kerala,30,60,0,2026-01-27
+orange,55,Madhya Pradesh,30,60,0,2026-01-28
+clove,55,Punjab,30,60,0,2026-01-29
+tobacco,55,West Bengal,30,60,0,2026-01-30
+kiwi,52,West Bengal,30,60,0,2026-01-31
+tea,146,Bihar,30,60,0,2026-02-01
+pigeon pea,57,Madhya Pradesh,30,60,0,2026-02-02
+litchi,52,Assam,30,60,0,2026-02-03
+parsley,56,Delhi,30,60,0,2026-02-04
+tomato,33,Rajasthan,30,60,0,2026-02-05
+cucumber,52,Madhya Pradesh,30,60,0,2026-02-06
+orange,60,Maharashtra,30,60,0,2026-02-07
+cumin,57,Delhi,30,60,0,2026-02-08
+pigeon pea,57,Bihar,30,60,0,2026-02-09
+coffee,153,West Bengal,30,60,0,2026-02-10
+pomegranate,55,Rajasthan,30,60,0,2026-02-11
+apple,82,Bihar,30,60,0,2026-02-12
+cocoa,56,Karnataka,30,60,0,2026-02-13
+sesame,54,Assam,30,60,0,2026-02-14
+dragon fruit,54,Assam,30,60,0,2026-02-15
+garlic,51,Odisha,30,60,0,2026-02-16
+bajra,58,Maharashtra,30,60,0,2026-02-17
+maize,29,Uttar Pradesh,30,60,0,2026-02-18
+maize,32,Karnataka,30,60,0,2026-02-19
+beans,58,Rajasthan,30,60,0,2026-02-20
+garlic,49,Kerala,30,60,0,2026-02-21
+peas,52,Madhya Pradesh,30,60,0,2026-02-22
+onion,33,Uttar Pradesh,30,60,0,2026-02-23
+clove,52,Uttar Pradesh,30,60,0,2026-02-24
+potato,36,Maharashtra,30,60,0,2026-02-25
+turmeric,56,Tamil Nadu,30,60,0,2026-02-26
+carrot,38,Odisha,30,60,0,2026-02-27
+sesame,51,Punjab,30,60,0,2026-02-28
+tea,150,Madhya Pradesh,30,60,0,2026-03-01
+cherry,57,Gujarat,30,60,0,2026-03-02
+pineapple,62,Maharashtra,30,60,0,2026-03-03
+bay leaf,57,Odisha,30,60,0,2026-03-04
+cauliflower,60,Maharashtra,30,60,0,2026-03-05
+potato,29,Gujarat,30,60,0,2026-03-06
+cinnamon,55,Uttar Pradesh,30,60,0,2026-03-07
+pumpkin,56,Tamil Nadu,30,60,0,2026-03-08
+bay leaf,58,Odisha,30,60,0,2026-03-09
+dragon fruit,52,Punjab,30,60,0,2026-03-10
+pear,52,Karnataka,30,60,0,2026-03-11
+ginger,60,Maharashtra,30,60,0,2026-03-12
+black gram,58,Madhya Pradesh,30,60,0,2026-03-13
+fennel,57,Tamil Nadu,30,60,0,2026-03-14
+jute,48,Madhya Pradesh,30,60,0,2026-03-15
+pigeon pea,63,Delhi,30,60,0,2026-03-16
+fig,58,Maharashtra,30,60,0,2026-03-17
+apricot,56,Rajasthan,30,60,0,2026-03-18
+bay leaf,61,Assam,30,60,0,2026-03-19
+rice,25,Madhya Pradesh,30,60,0,2026-03-20
+plum,54,Maharashtra,30,60,0,2026-03-21
+fennel,64,Delhi,30,60,0,2026-03-22
+mango,82,Karnataka,30,60,0,2026-03-23
+carrot,35,Uttar Pradesh,30,60,0,2026-03-24
+carrot,34,Bihar,30,60,0,2026-03-25
+ridge gourd,52,Rajasthan,30,60,0,2026-03-26
+black gram,56,Odisha,30,60,0,2026-03-27
+fennel,61,West Bengal,30,60,0,2026-03-28
+flax,52,Rajasthan,30,60,0,2026-03-29
+maize,32,Kerala,30,60,0,2026-03-30
+bottle gourd,48,Rajasthan,30,60,0,2026-03-31
+black pepper,58,Madhya Pradesh,30,60,0,2026-04-01
+fig,56,Madhya Pradesh,30,60,0,2026-04-02
+cumin,52,Punjab,30,60,0,2026-04-03
+saffron,406,Assam,30,60,0,2026-04-04
+clove,54,Odisha,30,60,0,2026-04-05
+coffee,159,Delhi,30,60,0,2026-04-06
+beetroot,58,Haryana,30,60,0,2026-04-07
+turmeric,56,Kerala,30,60,0,2026-04-08
+tea,150,Kerala,30,60,0,2026-04-09
+mustard,53,Haryana,30,60,0,2026-04-10
+beetroot,55,Punjab,30,60,0,2026-04-11
+rosemary,56,Haryana,30,60,0,2026-04-12
+cinnamon,55,Tamil Nadu,30,60,0,2026-04-13
+barley,55,Delhi,30,60,0,2026-04-14
+fig,56,Karnataka,30,60,0,2026-04-15
+millets,50,Assam,30,60,0,2026-04-16
+cardamom,402,Bihar,30,60,0,2026-04-17
+fig,56,Odisha,30,60,0,2026-04-18
+black gram,56,Kerala,30,60,0,2026-04-19
+bitter gourd,57,Tamil Nadu,30,60,0,2026-04-20
+groundnut,61,Haryana,30,60,0,2026-04-21
+clove,51,Punjab,30,60,0,2026-04-22
+maize,31,Rajasthan,30,60,0,2026-04-23
+millets,50,Tamil Nadu,30,60,0,2026-04-24
+banana,82,Haryana,30,60,0,2026-04-25
+tea,149,Kerala,30,60,0,2026-04-26
+chickpea,52,Odisha,30,60,0,2026-04-27
+flax,53,Rajasthan,30,60,0,2026-04-28
+oats,52,Tamil Nadu,30,60,0,2026-04-29
+wheat,34,Karnataka,30,60,0,2026-04-30
+black pepper,57,Odisha,30,60,0,2026-05-01
+fenugreek,59,Punjab,30,60,0,2026-05-02
+capsicum,53,West Bengal,30,60,0,2026-05-03
+millets,53,Madhya Pradesh,30,60,0,2026-05-04
+sesame,53,Uttar Pradesh,30,60,0,2026-05-05
+cumin,53,Tamil Nadu,30,60,0,2026-05-06
+tea,150,Bihar,30,60,0,2026-05-07
+flax,51,Odisha,30,60,0,2026-05-08
+black gram,59,Tamil Nadu,30,60,0,2026-05-09
+cauliflower,55,Madhya Pradesh,30,60,0,2026-05-10
+parsley,51,Madhya Pradesh,30,60,0,2026-05-11
+potato,29,Karnataka,30,60,0,2026-05-12
+cucumber,53,Gujarat,30,60,0,2026-05-13
+sunflower,52,Assam,30,60,0,2026-05-14
+clove,59,Maharashtra,30,60,0,2026-05-15
+cinnamon,52,Uttar Pradesh,30,60,0,2026-05-16
+black pepper,57,Kerala,30,60,0,2026-05-17
+papaya,56,Uttar Pradesh,30,60,0,2026-05-18
+corn,52,Rajasthan,30,60,0,2026-05-19
+ridge gourd,56,Delhi,30,60,0,2026-05-20
+fennel,57,Bihar,30,60,0,2026-05-21
+grapes,86,West Bengal,30,60,0,2026-05-22
+black pepper,57,Gujarat,30,60,0,2026-05-23
+peach,57,Punjab,30,60,0,2026-05-24
+coriander,56,West Bengal,30,60,0,2026-05-25
+cinnamon,55,Haryana,30,60,0,2026-05-26
+watermelon,56,Tamil Nadu,30,60,0,2026-05-27
+okra,61,Delhi,30,60,0,2026-05-28
+dragon fruit,51,Rajasthan,30,60,0,2026-05-29
+cotton,52,Tamil Nadu,30,60,0,2026-05-30
+beans,52,Uttar Pradesh,30,60,0,2026-05-31
+beetroot,57,Odisha,30,60,0,2026-06-01
+fennel,61,Rajasthan,30,60,0,2026-06-02
+beetroot,54,Bihar,30,60,0,2026-06-03
+chickpea,53,Haryana,30,60,0,2026-06-04
+mint,51,Rajasthan,30,60,0,2026-06-05
+bay leaf,66,Maharashtra,30,60,0,2026-06-06
+groundnut,60,Karnataka,30,60,0,2026-06-07
+green gram,57,Kerala,30,60,0,2026-06-08
+brinjal,57,Rajasthan,30,60,0,2026-06-09
+beetroot,54,Rajasthan,30,60,0,2026-06-10
+groundnut,57,Madhya Pradesh,30,60,0,2026-06-11
+millets,51,Rajasthan,30,60,0,2026-06-12
+cauliflower,54,Rajasthan,30,60,0,2026-06-13
+apricot,54,Rajasthan,30,60,0,2026-06-14
+dragon fruit,50,Gujarat,30,60,0,2026-06-15
+bitter gourd,53,Gujarat,30,60,0,2026-06-16
+dragon fruit,51,Rajasthan,30,60,0,2026-06-17
+radish,64,Delhi,30,60,0,2026-06-18
+brinjal,56,Rajasthan,30,60,0,2026-06-19
+pigeon pea,56,Bihar,30,60,0,2026-06-20
+black gram,54,Uttar Pradesh,30,60,0,2026-06-21
+wheat,28,Uttar Pradesh,30,60,0,2026-06-22
+beetroot,55,Odisha,30,60,0,2026-06-23
+parsley,50,Bihar,30,60,0,2026-06-24
+mustard,55,Haryana,30,60,0,2026-06-25
+pigeon pea,59,Karnataka,30,60,0,2026-06-26
+apple,81,Madhya Pradesh,30,60,0,2026-06-27
+papaya,57,Haryana,30,60,0,2026-06-28
+papaya,54,Uttar Pradesh,30,60,0,2026-06-29
+watermelon,54,Haryana,30,60,0,2026-06-30
+oats,52,Assam,30,60,0,2026-07-01
+pomegranate,57,Odisha,30,60,0,2026-07-02
+cabbage,31,Rajasthan,30,60,0,2026-07-03
+oats,49,Karnataka,30,60,0,2026-07-04
+grapes,89,Delhi,30,60,0,2026-07-05
+pineapple,55,Bihar,30,60,0,2026-07-06
+maize,32,Tamil Nadu,30,60,0,2026-07-07
+fig,55,Assam,30,60,0,2026-07-08
+nutmeg,58,Gujarat,30,60,0,2026-07-09
+ragi,50,West Bengal,30,60,0,2026-07-10
+ridge gourd,52,Kerala,30,60,0,2026-07-11
+beans,55,Tamil Nadu,30,60,0,2026-07-12
+bottle gourd,50,Uttar Pradesh,30,60,0,2026-07-13
+capsicum,56,Odisha,30,60,0,2026-07-14
+corn,53,Rajasthan,30,60,0,2026-07-15
+sunflower,56,Madhya Pradesh,30,60,0,2026-07-16
+coffee,154,Rajasthan,30,60,0,2026-07-17
+onion,35,Karnataka,30,60,0,2026-07-18
+radish,60,Odisha,30,60,0,2026-07-19
+brinjal,57,Odisha,30,60,0,2026-07-20
+black gram,58,Bihar,30,60,0,2026-07-21
+saffron,406,Odisha,30,60,0,2026-07-22
+flax,52,Punjab,30,60,0,2026-07-23
+cocoa,56,Madhya Pradesh,30,60,0,2026-07-24
+groundnut,59,Karnataka,30,60,0,2026-07-25
+banana,86,Maharashtra,30,60,0,2026-07-26
+peas,55,Gujarat,30,60,0,2026-07-27
+bottle gourd,49,Odisha,30,60,0,2026-07-28
+turmeric,56,Karnataka,30,60,0,2026-07-29
+kiwi,52,Uttar Pradesh,30,60,0,2026-07-30
+apple,84,Karnataka,30,60,0,2026-07-31
+mango,79,Uttar Pradesh,30,60,0,2026-08-01
+groundnut,59,Punjab,30,60,0,2026-08-02
+bitter gourd,53,Bihar,30,60,0,2026-08-03
+apricot,54,Kerala,30,60,0,2026-08-04
+carrot,37,Kerala,30,60,0,2026-08-05
+rice,26,Punjab,30,60,0,2026-08-06
+black pepper,57,Assam,30,60,0,2026-08-07
+black pepper,64,Delhi,30,60,0,2026-08-08
+tea,149,Madhya Pradesh,30,60,0,2026-08-09
+cauliflower,63,Maharashtra,30,60,0,2026-08-10
+bay leaf,59,Assam,30,60,0,2026-08-11
+fennel,61,West Bengal,30,60,0,2026-08-12
+basil,58,West Bengal,30,60,0,2026-08-13
+groundnut,57,West Bengal,30,60,0,2026-08-14
+sesame,55,West Bengal,30,60,0,2026-08-15
+hemp,57,Assam,30,60,0,2026-08-16
+sesame,51,Odisha,30,60,0,2026-08-17
+pineapple,56,Haryana,30,60,0,2026-08-18
+maize,33,Haryana,30,60,0,2026-08-19
+sesame,55,Madhya Pradesh,30,60,0,2026-08-20
+jowar,56,Delhi,30,60,0,2026-08-21
+parsley,56,Maharashtra,30,60,0,2026-08-22
+sunflower,53,Tamil Nadu,30,60,0,2026-08-23
+peach,56,Kerala,30,60,0,2026-08-24
+cauliflower,56,Gujarat,30,60,0,2026-08-25
+bay leaf,58,Odisha,30,60,0,2026-08-26
+tea,148,Odisha,30,60,0,2026-08-27
+parsley,54,Haryana,30,60,0,2026-08-28
+coriander,57,Tamil Nadu,30,60,0,2026-08-29
+bottle gourd,56,Maharashtra,30,60,0,2026-08-30
+onion,41,Maharashtra,30,60,0,2026-08-31
+bay leaf,55,Uttar Pradesh,30,60,0,2026-09-01
+ridge gourd,52,Punjab,30,60,0,2026-09-02
+bottle gourd,46,Uttar Pradesh,30,60,0,2026-09-03
+basil,57,West Bengal,30,60,0,2026-09-04
+cocoa,56,Rajasthan,30,60,0,2026-09-05
+wheat,31,Punjab,30,60,0,2026-09-06
+okra,54,Uttar Pradesh,30,60,0,2026-09-07
+saffron,410,Kerala,30,60,0,2026-09-08
+rubber,51,Gujarat,30,60,0,2026-09-09
+lentil,49,Bihar,30,60,0,2026-09-10
+jute,53,Maharashtra,30,60,0,2026-09-11
+apricot,55,West Bengal,30,60,0,2026-09-12
+soybean,48,Uttar Pradesh,30,60,0,2026-09-13
+sunflower,55,Kerala,30,60,0,2026-09-14
+cotton,61,Maharashtra,30,60,0,2026-09-15
+turmeric,55,Haryana,30,60,0,2026-09-16
+bitter gourd,57,Gujarat,30,60,0,2026-09-17
+potato,37,Delhi,30,60,0,2026-09-18
+litchi,55,Assam,30,60,0,2026-09-19
+corn,52,Tamil Nadu,30,60,0,2026-09-20
+bay leaf,57,Tamil Nadu,30,60,0,2026-09-21
+parsley,53,Kerala,30,60,0,2026-09-22
+black pepper,58,Tamil Nadu,30,60,0,2026-09-23
+mint,47,Uttar Pradesh,30,60,0,2026-09-24
+guava,59,Punjab,30,60,0,2026-09-25
+radish,64,Delhi,30,60,0,2026-09-26
+onion,34,Punjab,30,60,0,2026-09-27
+black gram,56,Karnataka,30,60,0,2026-09-28
+cumin,55,Delhi,30,60,0,2026-09-29
+millets,48,Bihar,30,60,0,2026-09-30
+millets,53,Tamil Nadu,30,60,0,2026-10-01
+radish,56,Haryana,30,60,0,2026-10-02
+pigeon pea,58,Gujarat,30,60,0,2026-10-03
+capsicum,55,Madhya Pradesh,30,60,0,2026-10-04
+grapes,85,Rajasthan,30,60,0,2026-10-05
+clove,54,Rajasthan,30,60,0,2026-10-06
+pineapple,54,Gujarat,30,60,0,2026-10-07
+fennel,58,Haryana,30,60,0,2026-10-08
+radish,59,Gujarat,30,60,0,2026-10-09
+mustard,53,Madhya Pradesh,30,60,0,2026-10-10
+wheat,35,Delhi,30,60,0,2026-10-11
+cabbage,38,Delhi,30,60,0,2026-10-12
+corn,52,Tamil Nadu,30,60,0,2026-10-13
+carrot,44,Maharashtra,30,60,0,2026-10-14
+coriander,57,Bihar,30,60,0,2026-10-15
+kiwi,54,Tamil Nadu,30,60,0,2026-10-16
+coriander,57,Kerala,30,60,0,2026-10-17
+radish,59,Madhya Pradesh,30,60,0,2026-10-18
+spinach,66,Delhi,30,60,0,2026-10-19
+capsicum,52,Haryana,30,60,0,2026-10-20
+pomegranate,57,Madhya Pradesh,30,60,0,2026-10-21
+green gram,56,Assam,30,60,0,2026-10-22
+black gram,59,Haryana,30,60,0,2026-10-23
+ragi,50,Odisha,30,60,0,2026-10-24
+basil,57,Karnataka,30,60,0,2026-10-25
+pear,51,Madhya Pradesh,30,60,0,2026-10-26
+quinoa,53,Odisha,30,60,0,2026-10-27
